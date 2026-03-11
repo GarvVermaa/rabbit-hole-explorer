@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+@layer base {
+  html, body, #__next {
+    height: 100%;
+    overflow: hidden;
+    background: #03080f;
+    color: #f0f4ff;
+    font-family: 'Inter', 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  /* Heavy frosted glass — main panels */
+  .glass-heavy {
+    background: rgba(8, 20, 40, 0.65);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* Lighter frosted glass — cards */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Aurora glow text */
+  .aurora-text {
+    background: linear-gradient(135deg, #4dffc3, #38bdf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Teal glow effects */
+  .glow-teal {
+    box-shadow: 0 0 20px rgba(77, 255, 195, 0.3), 0 0 60px rgba(77, 255, 195, 0.1);
+  }
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(192, 132, 252, 0.3), 0 0 60px rgba(192, 132, 252, 0.1);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: rgba(77, 255, 195, 0.2); 
+  border-radius: 3px; 
+}
+::-webkit-scrollbar-thumb:hover { 
+  background: rgba(77, 255, 195, 0.4); 
+}
+
+canvas { display: block; }
+
+::selection {
+  background: rgba(77, 255, 195, 0.2);
+  color: #fff;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "rabbit-hole-explorer",
+  "version": "1.0.0",
+  "description": "Internet Rabbit Hole Explorer - A 3D knowledge graph platform",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "setup": "npm run install:all && npm run seed"
+  },
+  "keywords": ["knowledge-graph", "three.js", "next.js", "mongodb", "visualization"],
+  "author": "Rabbit Hole Explorer"
+}
