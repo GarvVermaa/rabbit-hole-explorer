@@ -90,12 +90,12 @@ export default function Sidebar({ onSearch, isLoading, history, onClearHistory }
 
           {/* Search */}
           <div className="relative">
-            <div className="flex items-center rounded-xl transition-all duration-300" style={{
+            <div className="flex items-start rounded-xl transition-all duration-300" style={{
               background: 'rgba(255,255,255,0.05)',
               border: open ? '1px solid rgba(77,255,195,0.4)' : '1px solid rgba(255,255,255,0.08)',
               boxShadow: open ? '0 0 20px rgba(77,255,195,0.08)' : 'none',
             }}>
-              <div className="pl-3 pr-2 shrink-0">
+              <div className="pl-3 pr-2 pt-3 shrink-0">
                 {isLoading ? (
                   <div className="flex gap-0.5 items-center">
                     {[0,1,2].map(i => (
@@ -109,24 +109,35 @@ export default function Sidebar({ onSearch, isLoading, history, onClearHistory }
                   <Search className="w-3.5 h-3.5" style={{ color: 'rgba(200,220,255,0.4)' }} />
                 )}
               </div>
-              <input
+              <textarea
                 ref={inputRef}
                 value={q}
+                rows={2}
                 onChange={e => { setQ(e.target.value); setOpen(true); }}
                 onFocus={() => setOpen(true)}
                 onBlur={() => setTimeout(() => setOpen(false), 150)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') submit();
+                  if (e.key === 'Enter') { e.preventDefault(); submit(); }
                   if (e.key === 'Escape') { setOpen(false); inputRef.current.blur(); }
                 }}
-                placeholder="Search any topic..."
+                placeholder="Search topics..."
                 disabled={isLoading}
-                className="flex-1 bg-transparent text-xs py-3 pr-2 outline-none font-mono"
-                style={{ color: '#f0f4ff', caretColor: '#4dffc3' }}
+                className="flex-1 bg-transparent text-xs py-2.5 pr-2 outline-none font-mono resize-none"
+                style={{
+                  color: '#f0f4ff',
+                  caretColor: '#4dffc3',
+                  minWidth: 0,
+                  lineHeight: '1.6',
+                  wordBreak: 'break-word',
+                  overflowY: 'auto',
+                  maxHeight: '4.5rem',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(77,255,195,0.2) transparent',
+                }}
               />
               {q.trim() && (
                 <button onClick={() => submit()} disabled={isLoading}
-                  className="m-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                  className="mt-2 mr-1.5 mb-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all shrink-0 self-start"
                   style={{ background: 'rgba(77,255,195,0.15)', color: '#4dffc3', border: '1px solid rgba(77,255,195,0.2)' }}
                 >
                   Go →
