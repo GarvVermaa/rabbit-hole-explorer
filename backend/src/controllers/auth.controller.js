@@ -31,4 +31,11 @@ const logout = asyncHandler(async (req, res) => {
   );
 });
 
-export const authController = { register, login, refreshAccessToken, logout };
+const getProfile = asyncHandler(async (req, res) => {
+  const { _id, email, createdAt } = req.user;
+  res.status(HTTP.OK).json(
+    new ApiResponse(HTTP.OK, 'Profile fetched', { _id, email, createdAt })
+  );
+});
+
+export const authController = { register, login, refreshAccessToken, logout, getProfile };

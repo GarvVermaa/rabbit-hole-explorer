@@ -1,14 +1,10 @@
 /**
- * Wikipedia + YouTube data layer.
- * No backend required — everything goes directly to public APIs.
+ * Wikipedia-powered data layer.
+ * No backend required — everything goes directly to the Wikipedia REST API.
  *
- * Wikipedia Endpoints:
+ * Endpoints used:
  *   https://en.wikipedia.org/api/rest_v1/page/summary/{title}
  *   https://en.wikipedia.org/w/api.php   (for links / search)
- *
- * YouTube:
- *   We build a YouTube search URL so users can click through to results.
- *   For embedded previews we use the YouTube oEmbed endpoint (no API key needed).
  */
 
 const WP_REST   = 'https://en.wikipedia.org/api/rest_v1';
@@ -79,37 +75,8 @@ async function wpLinks(title, limit = 30) {
   const pages = Object.values(data?.query?.pages || {});
   if (!pages.length) return [];
   const links = (pages[0].links || []).map(l => l.title);
-  // filter out meta pages
+  // filter out meta pages (Wikipedia:, Help:, Template:, etc.)
   return links.filter(l => !/^(Wikipedia|Help|Template|Category|Portal|File|Talk|User):/i.test(l));
-}
-
-// ─── build YouTube search URL for a topic ─────────────────────────────────
-export function getYouTubeSearchUrl(topicName) {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(topicName + ' explained')}`;
-}
-
-// ─── fetch a YouTube video via oEmbed (no API key) ────────────────────────
-// Uses Invidious public instance to get video IDs without an API key
-export async function getYouTubeVideos(topicName) {
-  try {
-    // Use Invidious public API (no key needed) to search for videos
-    const query = encodeURIComponent(topicName + ' explained');
-    const res = await fetch(`https://inv.nadeko.net/api/v1/search?q=${query}&type=video&page=1`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error('Invidious search failed');
-    const results = await res.json();
-    return (results || []).slice(0, 3).map(v => ({
-      videoId: v.videoId,
-      title: v.title,
-      author: v.author,
-      thumbnail: `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
-      youtubeUrl: `https://www.youtube.com/watch?v=${v.videoId}`,
-    }));
-  } catch {
-    // Fallback: return a direct YouTube search link instead of individual videos
-    return [];
-  }
 }
 
 // ─── build a node object from a Wikipedia summary ─────────────────────────
@@ -131,13 +98,13 @@ function summaryToNode(summary, depth = 1, isCenter = false) {
     depth:       isCenter ? 0 : depth,
     thumbnail:   summary.thumbnail?.source || null,
     wikiUrl:     summary.content_urls?.desktop?.page || null,
-    youtubeSearchUrl: getYouTubeSearchUrl(summary.title),
-    related_topics: [],
+    related_topics: [], // filled in after
   };
 }
 
 // ─── pick N diverse child links to actually fetch ─────────────────────────
 function pickLinks(links, n = 6) {
+  // shuffle and pick first n
   const shuffled = [...links].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, n);
 }
@@ -148,18 +115,22 @@ function pickLinks(links, n = 6) {
  * Search a topic → returns initial graph centred on it with 5-7 children
  */
 export async function searchTopic(query) {
+  // 1. Find best matching Wikipedia title
   const exactTitle = await wpSearch(query);
   const summary    = await wpSummary(exactTitle);
   const center     = summaryToNode(summary, 0, true);
 
+  // 2. Get links from the page
   const allLinks = await wpLinks(exactTitle, 40);
   const chosen   = pickLinks(allLinks, 6);
 
+  // 3. Fetch summaries for children (parallel, ignore failures)
   const childSummaries = await Promise.allSettled(chosen.map(t => wpSummary(t)));
   const children = childSummaries
     .filter(r => r.status === 'fulfilled')
     .map(r => summaryToNode(r.value, 1));
 
+  // update center's related_topics
   center.related_topics = children.map(c => c.name);
 
   const nodes = [center, ...children];
@@ -177,22 +148,19 @@ export async function searchTopic(query) {
 }
 
 /**
- * Get full topic detail (re-fetch summary + YouTube videos)
+ * Get full topic detail (re-fetch summary for freshest data)
  */
 export async function getTopicById(id) {
   const title = id.replace(/_/g, ' ');
   try {
-    const [summary, videos] = await Promise.all([
-      wpSummary(title),
-      getYouTubeVideos(title),
-    ]);
-    const node = summaryToNode(summary, 0, true);
+    const summary = await wpSummary(title);
+    const node    = summaryToNode(summary, 0, true);
+    // get related_topics list without full fetch
     const links = await wpLinks(title, 20);
     node.related_topics = links.slice(0, 8);
-    node.videos = videos;
     return { topic: node };
   } catch {
-    return { topic: { id, name: title, description: 'Could not load Wikipedia data.', related_topics: [], videos: [] } };
+    return { topic: { id, name: title, description: 'Could not load Wikipedia data.', related_topics: [] } };
   }
 }
 
@@ -216,4 +184,47 @@ export async function getRelatedTopics(id) {
   }));
 
   return { nodes: children, edges, parentId: id };
+}
+
+// ─── Backend API helpers ──────────────────────────────────────────────────
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+async function apiFetch(path, options = {}) {
+  const { token, ...fetchOpts } = options;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const res = await fetch(`${API_BASE}${path}`, { ...fetchOpts, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data.data;
+}
+
+export async function apiLogin(email, password) {
+  return apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export async function apiRegister(email, password) {
+  return apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export async function apiLogout(token) {
+  return apiFetch('/auth/logout', { method: 'POST', token });
+}
+
+export async function apiGetProfile(token) {
+  return apiFetch('/auth/me', { token });
+}
+
+export async function apiGetFavourites(token) {
+  return apiFetch('/favourites', { token });
+}
+
+export async function apiSaveFavourite(token, { title, path }) {
+  return apiFetch('/favourites', { method: 'POST', token, body: JSON.stringify({ title, path }) });
+}
+
+export async function apiDeleteFavourite(token, id) {
+  return apiFetch(`/favourites/${id}`, { method: 'DELETE', token });
 }

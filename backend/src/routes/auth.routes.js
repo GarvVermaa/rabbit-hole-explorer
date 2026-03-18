@@ -14,4 +14,7 @@ router.post('/refresh',  validate(refreshTokenSchema), authController.refreshAcc
 // Protected route — must be logged in to log out
 router.post('/logout', verifyJWT, authController.logout);
 
+// Protected route — get current user profile
+router.get('/me', verifyJWT, authController.getProfile);
+
 export { router as authRoutes };
