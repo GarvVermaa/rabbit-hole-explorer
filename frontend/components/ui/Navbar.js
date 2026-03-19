@@ -39,7 +39,14 @@ export default function Navbar({ view, onViewChange, onSearch, isLoading, onSave
           display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
           flexShrink: 0, marginRight: 4,
         }}>
-          <span style={{ fontSize: 22 }}>🐇</span>
+          <img
+            src="/rabbit_Hole.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }}
+          />
           <span style={{
             fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 15,
             color: '#e8f0ff', letterSpacing: '-0.03em',
